@@ -1,1 +1,259 @@
-/* Оформление элементов, создаваемых через JavaScript. */
+:root {
+    color-scheme: light;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1d3029;
+    background: #f2f5f3;
+    line-height: 1.5;
+    --accent: #17665b;
+    --muted: #61736a;
+    --border: #d9e2dd;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    padding: 48px 24px;
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+button,
+input,
+select,
+.field {
+    min-width: 0;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid #278675;
+    outline-offset: 3px;
+}
+
+.app-shell {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+}
+
+.app-header {
+    margin-bottom: 32px;
+    padding-left: 20px;
+    border-left: 4px solid var(--accent);
+}
+
+.app-header__title {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+}
+
+.app-header__subtitle {
+    margin: 12px 0 0;
+    color: var(--muted);
+}
+
+.app-main {
+    display: grid;
+    gap: 20px;
+}
+
+.panel {
+    min-width: 0;
+    padding: 28px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgb(29 48 41 / 3%);
+}
+
+.panel__title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 650;
+    line-height: 1.4;
+}
+
+.task-form,
+.filter-controls {
+    display: grid;
+    align-items: end;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.task-form {
+    grid-template-columns: minmax(0, 1fr) 190px auto;
+}
+
+.filter-controls {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
+.field__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.field__control {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid #b9c8bf;
+    border-radius: 8px;
+    color: inherit;
+    background: #ffffff;
+}
+
+.field__control::placeholder {
+    color: #6a7971;
+    opacity: 1;
+}
+
+.field__control:not(:disabled):hover {
+    border-color: var(--accent);
+}
+
+.field__control:disabled {
+    color: var(--muted);
+    background: #f4f6f5;
+    border-color: var(--border);
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.button {
+    min-height: 46px;
+    padding: 10px 20px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.button--primary {
+    color: #ffffff;
+    background: var(--accent);
+}
+
+.button--primary:not(:disabled):hover {
+    background: #104e45;
+}
+
+.button--primary:not(:disabled):active {
+    background: #0b3f37;
+}
+
+.button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.tasks-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.task-count {
+    margin: 0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #3b5b4e;
+    background: #edf4ef;
+    font-size: 0.875rem;
+}
+
+.task-list {
+    display: grid;
+    gap: 12px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.empty-state {
+    margin-top: 24px;
+    padding: 48px 24px;
+    border: 1px dashed #cbd8d0;
+    border-radius: 12px;
+    text-align: center;
+    background: #fafcfb;
+    overflow-wrap: anywhere;
+}
+
+.empty-state__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.empty-state__text {
+    margin: 8px 0 0;
+    color: var(--muted);
+}
+
+@media (max-width: 900px) {
+    .filter-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .task-form {
+        grid-template-columns: minmax(0, 1fr) 190px;
+    }
+
+    .task-form > .button {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 28px 16px;
+    }
+
+    .app-header {
+        margin-bottom: 24px;
+        padding-left: 16px;
+    }
+
+    .panel {
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .task-form,
+    .filter-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .task-form > .button {
+        justify-self: stretch;
+    }
+
+    .empty-state {
+        padding: 36px 16px;
+    }
+}
