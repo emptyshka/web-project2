@@ -60,6 +60,8 @@ function createApp() {
     dateInput.name = "date";
     dateInput.type = "date";
     dateInput.required = true;
+    dateInput.min = "0001-01-01";
+    dateInput.max = "9999-12-31";
 
     const addButton = createElement("button", "button button--primary", "Добавить задачу");
     addButton.type = "submit";
@@ -132,21 +134,40 @@ function createApp() {
     );
 
     tasksSection.append(tasksHeader, taskList, emptyState);
-    main.append(formSection, filterSection, tasksSection);
+    const storageMessage = createElement("p", "storage-message");
+    storageMessage.setAttribute("role", "alert");
+    storageMessage.hidden = true;
+    main.append(storageMessage, formSection, filterSection, tasksSection);
     root.append(header, main);
 
     return {
         root, form, formHeading, titleInput, dateInput, addButton, cancelButton,
         searchInput, statusSelect, dateFilter, sortSelect,
-        taskList, taskCount, emptyState
+        taskList, taskCount, emptyState, storageMessage
     };
 }
 
 const app = createApp();
 document.body.append(app.root);
 
-const tasks = [];
+const loadedState = loadTasks();
+const tasks = loadedState.tasks;
 let editingTaskId = null;
+
+function showStorageError(message) {
+    app.storageMessage.textContent = message;
+    app.storageMessage.hidden = !message;
+}
+
+showStorageError(loadedState.error);
+
+function persistTasks() {
+    if (!loadedState.canSave) {
+        return;
+    }
+    const saved = saveTasks(tasks);
+    showStorageError(saved ? "" : "Не удалось сохранить изменения. Задачи доступны в этой вкладке, но после перезагрузки изменения могут потеряться. Проверьте доступ к хранилищу и свободное место.");
+}
 
 function resetTaskForm() {
     editingTaskId = null;
@@ -178,6 +199,7 @@ function deleteTask(id) {
     if (editingTaskId === id) {
         resetTaskForm();
     }
+    persistTasks();
     renderTasks();
     app.titleInput.focus();
 }
@@ -207,6 +229,7 @@ function createTaskItem(task) {
     checkbox.checked = task.completed;
     checkbox.addEventListener("change", () => {
         task.completed = checkbox.checked;
+        persistTasks();
         renderTasks();
         app.taskList.querySelector(`[data-id="${task.id}"] .task-item__checkbox`)?.focus();
     });
@@ -271,7 +294,10 @@ app.form.addEventListener("submit", event => {
         });
     }
 
+    persistTasks();
     renderTasks();
     resetTaskForm();
     app.titleInput.focus();
 });
+
+renderTasks();
