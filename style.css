@@ -193,6 +193,26 @@ select:focus-visible {
     list-style: none;
 }
 
+.task-item {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fafcfb;
+}
+
+.task-item__title {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.task-item__date {
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
 .empty-state {
     margin-top: 24px;
     padding: 48px 24px;

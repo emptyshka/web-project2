@@ -63,7 +63,6 @@ function createApp() {
 
     const addButton = createElement("button", "button button--primary", "Добавить задачу");
     addButton.type = "submit";
-    addButton.disabled = true;
     form.append(createField("Название задачи", titleInput), createField("Дата задачи", dateInput), addButton);
     formSection.append(formHeading, form);
 
@@ -140,3 +139,56 @@ function createApp() {
 
 const app = createApp();
 document.body.append(app.root);
+
+const tasks = [];
+
+function createTaskItem(task) {
+    const item = createElement("li", "task-item");
+    item.dataset.id = task.id;
+
+    const title = createElement("h3", "task-item__title", task.title);
+    const date = createElement("time", "task-item__date", `Дата: ${task.date.split("-").reverse().join(".")}`);
+    date.dateTime = task.date;
+
+    item.append(title, date);
+    return item;
+}
+
+function renderTasks() {
+    const fragment = document.createDocumentFragment();
+
+    for (const task of tasks) {
+        fragment.append(createTaskItem(task));
+    }
+
+    app.taskList.replaceChildren(fragment);
+    app.taskList.hidden = tasks.length === 0;
+    app.emptyState.hidden = tasks.length > 0;
+    app.taskCount.textContent = `Всего задач: ${tasks.length}`;
+}
+
+app.titleInput.addEventListener("input", () => {
+    app.titleInput.setCustomValidity("");
+});
+
+app.form.addEventListener("submit", event => {
+    event.preventDefault();
+
+    const title = app.titleInput.value.trim();
+    app.titleInput.setCustomValidity(title ? "" : "Введите название задачи, а не только пробелы.");
+
+    if (!app.form.reportValidity()) {
+        return;
+    }
+
+    tasks.push({
+        id: crypto.randomUUID(),
+        title,
+        date: app.dateInput.value,
+        completed: false
+    });
+
+    renderTasks();
+    app.form.reset();
+    app.titleInput.focus();
+});
