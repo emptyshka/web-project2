@@ -168,6 +168,34 @@ select:focus-visible {
     cursor: not-allowed;
 }
 
+.form-actions,
+.task-item__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.button--secondary {
+    color: var(--accent);
+    background: #ffffff;
+    border-color: #b9c8bf;
+}
+
+.button--secondary:hover {
+    background: #edf4ef;
+}
+
+.button--danger {
+    color: #a12e2e;
+    background: #ffffff;
+    border-color: #dcbcbc;
+}
+
+.button--danger:hover {
+    background: #fff1f1;
+}
+
 .tasks-section__header {
     display: flex;
     align-items: center;
@@ -213,6 +241,36 @@ select:focus-visible {
     font-size: 0.875rem;
 }
 
+.task-item__actions {
+    margin-top: 16px;
+}
+
+.task-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-right: auto;
+    cursor: pointer;
+}
+
+.task-item__checkbox {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.task-item--completed {
+    background: #edf4ef;
+}
+
+.task-item--completed .task-item__title {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
 .empty-state {
     margin-top: 24px;
     padding: 48px 24px;
@@ -243,7 +301,7 @@ select:focus-visible {
         grid-template-columns: minmax(0, 1fr) 190px;
     }
 
-    .task-form > .button {
+    .task-form > .form-actions {
         grid-column: 1 / -1;
         justify-self: start;
     }
@@ -269,8 +327,12 @@ select:focus-visible {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .task-form > .button {
+    .task-form > .form-actions {
         justify-self: stretch;
+    }
+
+    .form-actions > .button {
+        flex: 1 1 160px;
     }
 
     .empty-state {

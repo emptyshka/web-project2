@@ -63,7 +63,12 @@ function createApp() {
 
     const addButton = createElement("button", "button button--primary", "Добавить задачу");
     addButton.type = "submit";
-    form.append(createField("Название задачи", titleInput), createField("Дата задачи", dateInput), addButton);
+    const cancelButton = createElement("button", "button button--secondary", "Отмена");
+    cancelButton.type = "button";
+    cancelButton.hidden = true;
+    const formActions = createElement("div", "form-actions");
+    formActions.append(addButton, cancelButton);
+    form.append(createField("Название задачи", titleInput), createField("Дата задачи", dateInput), formActions);
     formSection.append(formHeading, form);
 
     const filterSection = createElement("section", "panel task-filters");
@@ -131,7 +136,7 @@ function createApp() {
     root.append(header, main);
 
     return {
-        root, form, titleInput, dateInput, addButton,
+        root, form, formHeading, titleInput, dateInput, addButton, cancelButton,
         searchInput, statusSelect, dateFilter, sortSelect,
         taskList, taskCount, emptyState
     };
@@ -141,16 +146,79 @@ const app = createApp();
 document.body.append(app.root);
 
 const tasks = [];
+let editingTaskId = null;
+
+function resetTaskForm() {
+    editingTaskId = null;
+    app.form.reset();
+    app.titleInput.setCustomValidity("");
+    app.formHeading.textContent = "Новая задача";
+    app.addButton.textContent = "Добавить задачу";
+    app.cancelButton.hidden = true;
+}
+
+function startEditing(task) {
+    editingTaskId = task.id;
+    app.titleInput.setCustomValidity("");
+    app.titleInput.value = task.title;
+    app.dateInput.value = task.date;
+    app.formHeading.textContent = "Редактирование задачи";
+    app.addButton.textContent = "Сохранить изменения";
+    app.cancelButton.hidden = false;
+    app.titleInput.focus();
+}
+
+function deleteTask(id) {
+    const index = tasks.findIndex(task => task.id === id);
+    if (index === -1) {
+        return;
+    }
+
+    tasks.splice(index, 1);
+    if (editingTaskId === id) {
+        resetTaskForm();
+    }
+    renderTasks();
+    app.titleInput.focus();
+}
+
+function createTaskButton(text, className, onClick) {
+    const button = createElement("button", `button ${className}`, text);
+    button.type = "button";
+    button.addEventListener("click", onClick);
+    return button;
+}
 
 function createTaskItem(task) {
     const item = createElement("li", "task-item");
     item.dataset.id = task.id;
+    item.classList.toggle("task-item--completed", task.completed);
 
     const title = createElement("h3", "task-item__title", task.title);
     const date = createElement("time", "task-item__date", `Дата: ${task.date.split("-").reverse().join(".")}`);
     date.dateTime = task.date;
 
-    item.append(title, date);
+    const content = createElement("div", "task-item__content");
+    content.append(title, date);
+
+    const status = createElement("label", "task-status");
+    const checkbox = createElement("input", "task-item__checkbox");
+    checkbox.type = "checkbox";
+    checkbox.checked = task.completed;
+    checkbox.addEventListener("change", () => {
+        task.completed = checkbox.checked;
+        renderTasks();
+        app.taskList.querySelector(`[data-id="${task.id}"] .task-item__checkbox`)?.focus();
+    });
+    status.append(checkbox, createElement("span", "", "Выполнено"));
+
+    const actions = createElement("div", "task-item__actions");
+    actions.append(
+        status,
+        createTaskButton("Редактировать", "button--secondary", () => startEditing(task)),
+        createTaskButton("Удалить", "button--danger", () => deleteTask(task.id))
+    );
+    item.append(content, actions);
     return item;
 }
 
@@ -171,6 +239,11 @@ app.titleInput.addEventListener("input", () => {
     app.titleInput.setCustomValidity("");
 });
 
+app.cancelButton.addEventListener("click", () => {
+    resetTaskForm();
+    app.titleInput.focus();
+});
+
 app.form.addEventListener("submit", event => {
     event.preventDefault();
 
@@ -181,14 +254,24 @@ app.form.addEventListener("submit", event => {
         return;
     }
 
-    tasks.push({
-        id: crypto.randomUUID(),
-        title,
-        date: app.dateInput.value,
-        completed: false
-    });
+    if (editingTaskId !== null) {
+        const task = tasks.find(task => task.id === editingTaskId);
+        if (!task) {
+            resetTaskForm();
+            return;
+        }
+        task.title = title;
+        task.date = app.dateInput.value;
+    } else {
+        tasks.push({
+            id: crypto.randomUUID(),
+            title,
+            date: app.dateInput.value,
+            completed: false
+        });
+    }
 
     renderTasks();
-    app.form.reset();
+    resetTaskForm();
     app.titleInput.focus();
 });
