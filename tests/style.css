@@ -1,0 +1,24 @@
+.test-results {
+    padding-left: 24px;
+}
+
+.test-results li {
+    margin: 12px 0;
+    overflow-wrap: anywhere;
+}
+
+.test-passed {
+    color: #17665b;
+}
+
+.test-failed {
+    color: #a12e2e;
+}
+
+.test-frame {
+    width: 100%;
+    height: 480px;
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
