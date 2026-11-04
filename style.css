@@ -250,6 +250,70 @@ select:focus-visible {
     overflow-wrap: anywhere;
 }
 
+.order-hint {
+    margin: 16px 0 0;
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
+.task-item__order {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.task-move-button {
+    width: 44px;
+    min-height: 44px;
+    padding: 6px;
+    font-size: 1.2rem;
+}
+
+.drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    color: var(--accent);
+    border: 1px dashed #b9c8bf;
+    border-radius: 8px;
+    font-size: 1.5rem;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.drag-handle--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    touch-action: auto;
+}
+
+.task-item--dragging {
+    opacity: 0.5;
+}
+
+.task-item--drop-before {
+    box-shadow: 0 -4px 0 var(--accent);
+}
+
+.task-item--drop-after {
+    box-shadow: 0 4px 0 var(--accent);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 .task-item__date {
     color: var(--muted);
     font-size: 0.875rem;

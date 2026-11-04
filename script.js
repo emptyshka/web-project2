@@ -133,7 +133,11 @@ function createApp() {
     const emptyText = createElement("p", "empty-state__text", "Добавьте задачу, чтобы начать планирование.");
     emptyState.append(emptyTitle, emptyText);
 
-    tasksSection.append(tasksHeader, taskList, emptyState);
+    const orderHint = createElement("p", "order-hint");
+    orderHint.id = "order-hint";
+    const orderStatus = createElement("p", "visually-hidden");
+    orderStatus.setAttribute("role", "status");
+    tasksSection.append(tasksHeader, orderHint, orderStatus, taskList, emptyState);
     const storageMessage = createElement("p", "storage-message");
     storageMessage.setAttribute("role", "alert");
     storageMessage.hidden = true;
@@ -143,7 +147,7 @@ function createApp() {
     return {
         root, form, formHeading, titleInput, dateInput, addButton, cancelButton,
         searchInput, statusSelect, dateFilter, sortSelect, resetFiltersButton,
-        taskList, taskCount, emptyState, emptyTitle, emptyText, storageMessage
+        taskList, taskCount, emptyState, emptyTitle, emptyText, storageMessage, orderHint, orderStatus
     };
 }
 
@@ -153,6 +157,120 @@ document.body.append(app.root);
 const loadedState = loadTasks();
 const tasks = loadedState.tasks;
 let editingTaskId = null;
+let draggedTaskId = null;
+
+function canReorderTasks() {
+    return app.sortSelect.value === "manual" && !app.searchInput.value.trim() &&
+        app.statusSelect.value === "all" && !app.dateFilter.value;
+}
+
+function moveTask(sourceId, targetId, position) {
+    if (!canReorderTasks()) {
+        return;
+    }
+    const reordered = getReorderedTasks(tasks, sourceId, targetId, position);
+    if (reordered.every((task, index) => task.id === tasks[index].id)) {
+        return;
+    }
+    tasks.splice(0, tasks.length, ...reordered);
+    persistTasks();
+    renderTasks();
+    const movedIndex = tasks.findIndex(task => task.id === sourceId);
+    app.orderStatus.textContent = `${tasks[movedIndex].title}: позиция ${movedIndex + 1} из ${tasks.length}.`;
+    const focusTarget = app.taskList.querySelector(`[data-id="${sourceId}"] .task-move-button:not(:disabled)`);
+    focusTarget?.focus();
+}
+
+function clearDropMarkers() {
+    for (const item of app.taskList.children) {
+        item.classList.remove("task-item--drop-before", "task-item--drop-after");
+    }
+}
+
+function finishDragging() {
+    draggedTaskId = null;
+    clearDropMarkers();
+    app.taskList.querySelector(".task-item--dragging")?.classList.remove("task-item--dragging");
+}
+
+function getDropPosition(event, item) {
+    const rect = item.getBoundingClientRect();
+    return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+}
+
+function addReorderControls(item, task) {
+    const index = tasks.findIndex(candidate => candidate.id === task.id);
+    const enabled = canReorderTasks();
+    const handle = createElement("span", "drag-handle", "⠿");
+    handle.classList.toggle("drag-handle--disabled", !enabled || tasks.length < 2);
+    handle.title = "Перетащить задачу";
+    handle.setAttribute("aria-hidden", "true");
+    let pointerStart = null;
+
+    function findDropTarget(event) {
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".task-item");
+        return target && app.taskList.contains(target) && target !== item ? target : null;
+    }
+
+    handle.addEventListener("pointerdown", event => {
+        if (!canReorderTasks() || tasks.length < 2 || event.button !== 0) {
+            return;
+        }
+        pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId };
+        handle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+    handle.addEventListener("pointermove", event => {
+        if (!pointerStart || pointerStart.id !== event.pointerId || !canReorderTasks()) {
+            return;
+        }
+        if (!draggedTaskId && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 6) {
+            return;
+        }
+        draggedTaskId = task.id;
+        item.classList.add("task-item--dragging");
+        clearDropMarkers();
+        const target = findDropTarget(event);
+        if (target) {
+            target.classList.add(`task-item--drop-${getDropPosition(event, target)}`);
+        }
+    });
+    handle.addEventListener("pointerup", event => {
+        if (!pointerStart || pointerStart.id !== event.pointerId) {
+            return;
+        }
+        const target = draggedTaskId === task.id ? findDropTarget(event) : null;
+        pointerStart = null;
+        handle.releasePointerCapture(event.pointerId);
+        finishDragging();
+        if (target) {
+            moveTask(task.id, target.dataset.id, getDropPosition(event, target));
+        }
+    });
+    handle.addEventListener("pointercancel", () => {
+        pointerStart = null;
+        finishDragging();
+    });
+
+    const orderControls = createElement("div", "task-item__order");
+    orderControls.setAttribute("role", "group");
+    orderControls.setAttribute("aria-label", "Порядок задачи");
+    orderControls.setAttribute("aria-describedby", app.orderHint.id);
+    const upButton = createTaskButton("↑", "button--secondary task-move-button", () => {
+        if (index > 0) moveTask(task.id, tasks[index - 1].id, "before");
+    });
+    upButton.setAttribute("aria-label", "Переместить выше");
+    upButton.title = "Переместить выше";
+    upButton.disabled = !enabled || index === 0;
+    const downButton = createTaskButton("↓", "button--secondary task-move-button", () => {
+        if (index < tasks.length - 1) moveTask(task.id, tasks[index + 1].id, "after");
+    });
+    downButton.setAttribute("aria-label", "Переместить ниже");
+    downButton.title = "Переместить ниже";
+    downButton.disabled = !enabled || index === tasks.length - 1;
+    orderControls.append(handle, upButton, downButton);
+    return orderControls;
+}
 
 function showStorageError(message) {
     app.storageMessage.textContent = message;
@@ -242,11 +360,15 @@ function createTaskItem(task) {
         createTaskButton("Редактировать", "button--secondary", () => startEditing(task)),
         createTaskButton("Удалить", "button--danger", () => deleteTask(task.id))
     );
-    item.append(content, actions);
+    item.append(addReorderControls(item, task), content, actions);
     return item;
 }
 
 function renderTasks() {
+    finishDragging();
+    app.orderHint.textContent = canReorderTasks()
+        ? "Перетащите задачу за значок ⠿ или используйте кнопки ↑ и ↓. Порядок сохраняется автоматически."
+        : "Для изменения порядка выберите «Свой порядок» и сбросьте поиск и фильтры кнопкой «Сбросить фильтры».";
     const visible = getVisibleTasks(tasks, {
         query: app.searchInput.value,
         status: app.statusSelect.value,
