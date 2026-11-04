@@ -19,7 +19,6 @@ function createSelect(id, name, options) {
     const select = createElement("select", "field__control");
     select.id = id;
     select.name = name;
-    select.disabled = true;
 
     for (const [value, text] of options) {
         const option = createElement("option", "", text);
@@ -84,7 +83,6 @@ function createApp() {
     searchInput.name = "query";
     searchInput.type = "search";
     searchInput.placeholder = "Поиск по названию";
-    searchInput.disabled = true;
 
     const statusSelect = createSelect("status-filter", "status", [
         ["all", "Все задачи"],
@@ -96,7 +94,8 @@ function createApp() {
     dateFilter.id = "date-filter";
     dateFilter.name = "filterDate";
     dateFilter.type = "date";
-    dateFilter.disabled = true;
+    dateFilter.min = "0001-01-01";
+    dateFilter.max = "9999-12-31";
 
     const sortSelect = createSelect("task-sort", "sort", [
         ["manual", "Свой порядок"],
@@ -110,7 +109,9 @@ function createApp() {
         createField("Дата", dateFilter),
         createField("Сортировка", sortSelect)
     );
-    filterSection.append(filterHeading, filterControls);
+    const resetFiltersButton = createElement("button", "button button--secondary reset-filters", "Сбросить фильтры");
+    resetFiltersButton.type = "button";
+    filterSection.append(filterHeading, filterControls, resetFiltersButton);
 
     const tasksSection = createElement("section", "panel tasks-section");
     const tasksHeader = createElement("div", "tasks-section__header");
@@ -128,10 +129,9 @@ function createApp() {
     taskList.hidden = true;
 
     const emptyState = createElement("div", "empty-state");
-    emptyState.append(
-        createElement("h3", "empty-state__title", "Пока нет задач"),
-        createElement("p", "empty-state__text", "Добавьте задачу, чтобы начать планирование.")
-    );
+    const emptyTitle = createElement("h3", "empty-state__title", "Пока нет задач");
+    const emptyText = createElement("p", "empty-state__text", "Добавьте задачу, чтобы начать планирование.");
+    emptyState.append(emptyTitle, emptyText);
 
     tasksSection.append(tasksHeader, taskList, emptyState);
     const storageMessage = createElement("p", "storage-message");
@@ -142,8 +142,8 @@ function createApp() {
 
     return {
         root, form, formHeading, titleInput, dateInput, addButton, cancelButton,
-        searchInput, statusSelect, dateFilter, sortSelect,
-        taskList, taskCount, emptyState, storageMessage
+        searchInput, statusSelect, dateFilter, sortSelect, resetFiltersButton,
+        taskList, taskCount, emptyState, emptyTitle, emptyText, storageMessage
     };
 }
 
@@ -231,7 +231,8 @@ function createTaskItem(task) {
         task.completed = checkbox.checked;
         persistTasks();
         renderTasks();
-        app.taskList.querySelector(`[data-id="${task.id}"] .task-item__checkbox`)?.focus();
+        const checkboxToFocus = app.taskList.querySelector(`[data-id="${task.id}"] .task-item__checkbox`);
+        (checkboxToFocus || app.statusSelect).focus();
     });
     status.append(checkbox, createElement("span", "", "Выполнено"));
 
@@ -246,17 +247,40 @@ function createTaskItem(task) {
 }
 
 function renderTasks() {
+    const visible = getVisibleTasks(tasks, {
+        query: app.searchInput.value,
+        status: app.statusSelect.value,
+        date: app.dateFilter.value,
+        sort: app.sortSelect.value
+    });
     const fragment = document.createDocumentFragment();
 
-    for (const task of tasks) {
+    for (const task of visible) {
         fragment.append(createTaskItem(task));
     }
 
     app.taskList.replaceChildren(fragment);
-    app.taskList.hidden = tasks.length === 0;
-    app.emptyState.hidden = tasks.length > 0;
-    app.taskCount.textContent = `Всего задач: ${tasks.length}`;
+    app.taskList.hidden = visible.length === 0;
+    app.emptyState.hidden = visible.length > 0;
+    app.taskCount.textContent = `Показано: ${visible.length} из ${tasks.length}`;
+    app.emptyTitle.textContent = tasks.length ? "Ничего не найдено" : "Пока нет задач";
+    app.emptyText.textContent = tasks.length
+        ? "Измените условия поиска или сбросьте фильтры."
+        : "Добавьте задачу, чтобы начать планирование.";
 }
+
+app.searchInput.addEventListener("input", renderTasks);
+app.dateFilter.addEventListener("input", renderTasks);
+app.statusSelect.addEventListener("change", renderTasks);
+app.sortSelect.addEventListener("change", renderTasks);
+app.resetFiltersButton.addEventListener("click", () => {
+    app.searchInput.value = "";
+    app.dateFilter.value = "";
+    app.statusSelect.value = "all";
+    app.sortSelect.value = "manual";
+    renderTasks();
+    app.searchInput.focus();
+});
 
 app.titleInput.addEventListener("input", () => {
     app.titleInput.setCustomValidity("");

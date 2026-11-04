@@ -35,6 +35,10 @@ select,
     min-width: 0;
 }
 
+.reset-filters {
+    margin-top: 16px;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
